@@ -1,0 +1,11 @@
+{
+  "domain": "wevolor",
+  "name": "Wevolor Control for Levolor Motorized Blinds",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/wevolor",
+  "requirements": ["pywevolor==0.0.1"],
+  "codeowners": [
+    "@timstallmann"
+  ],
+  "iot_class": "assumed_state"
+}

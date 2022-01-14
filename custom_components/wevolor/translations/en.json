@@ -1,0 +1,17 @@
+{
+    "config": {
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "unknown": "Unexpected error"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "channel_count": "How many channels should the UI display for this Wevolor?",
+                    "host": "IP address of Wevolor device on local network",
+                    "support_tilt": "Do the devices controlled by this Wevolor support tilting?"
+                }
+            }
+        }
+    }
+}
