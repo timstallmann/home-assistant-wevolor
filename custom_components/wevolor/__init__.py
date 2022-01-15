@@ -11,6 +11,7 @@ from .const import CONFIG_HOST, DOMAIN
 
 PLATFORMS: list[str] = [
     Platform.COVER,
+    Platform.BUTTON
 ]
 
 

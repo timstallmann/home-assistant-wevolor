@@ -25,3 +25,7 @@ After setup, your shades/blinds will appear in Home Assistant with one entity pe
 For more information on working with shades in Home Assistant, see the [Covers component](/integrations/cover/).
 
 Available services: `cover.open_cover`, `cover.close_cover`, `cover.stop_cover`. When tilt is enabled, `cover.open_cover_tilt`, `cover.close_cover_tilt` and `cover.stop_cover_tilt` are also available.
+
+## Button
+
+Favorite position for shades is exposed via a button, `button.wevolor_channel_1_favorite_position`.
