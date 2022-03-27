@@ -1,5 +1,5 @@
 # Home Assistant integration for Wevolor
-
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 [Levolor](https://levolor.com) is an American manufacturer of window shades and coverings. Motorized Levolor blinds can be controlled via the [Levolor Premium 6-Channel Remote](https://www.levolor.com/premium-6-channel-remote.html), which syncs via Bluetooth with a smartphone app but does not offer any remote control over Wi-Fi.
 
