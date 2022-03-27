@@ -5,7 +5,13 @@
         "data": {
           "host": "IP address of Wevolor device on local network",
           "support_tilt": "Do the devices controlled by this Wevolor support tilting?",
-          "channel_count": "How many channels should the UI display for this Wevolor?"
+          "name": "Name for this Wevolor group",
+          "channel_1": "Include channel #1 in this group?",
+          "channel_2": "Include channel #2 in this group?",
+          "channel_3": "Include channel #3 in this group?",
+          "channel_4": "Include channel #4 in this group?",
+          "channel_5": "Include channel #5 in this group?",
+          "channel_6": "Include channel #6 in this group?"
         }
       }
     },

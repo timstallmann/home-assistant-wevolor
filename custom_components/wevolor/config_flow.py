@@ -12,15 +12,21 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import CONFIG_CHANNELS, CONFIG_HOST, CONFIG_TILT, DOMAIN
+from .const import CONFIG_CHANNELS, CONFIG_HOST, CONFIG_TILT, DOMAIN, CONFIG_CHANNEL_1, CONFIG_CHANNEL_2, CONFIG_CHANNEL_3, CONFIG_CHANNEL_4, CONFIG_CHANNEL_5, CONFIG_CHANNEL_6, CONFIG_NAME
 
 _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONFIG_HOST): str,
+        vol.Required(CONFIG_CHANNEL_1, default= False): bool,
+        vol.Required(CONFIG_CHANNEL_2, default=False): bool,
+        vol.Required(CONFIG_CHANNEL_3, default=False): bool,
+        vol.Required(CONFIG_CHANNEL_4, default=False): bool,
+        vol.Required(CONFIG_CHANNEL_5, default=False): bool,
+        vol.Required(CONFIG_CHANNEL_6, default=False): bool,
         vol.Required(CONFIG_TILT, default=False): bool,
-        vol.Required(CONFIG_CHANNELS, default=6): vol.All(int, vol.Range(min=1, max=6)),
+        vol.Required(CONFIG_NAME): str,
     }
 )
 

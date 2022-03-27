@@ -3,7 +3,7 @@
   "name": "Wevolor Control for Levolor Motorized Blinds",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/wevolor",
-  "requirements": ["pywevolor==0.0.1"],
+  "requirements": ["pywevolor==0.0.2"],
   "codeowners": [
     "@timstallmann"
   ],
