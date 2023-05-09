@@ -8,6 +8,6 @@
     "@timstallmann"
   ],
   "iot_class": "assumed_state",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "issue_tracker": "https://github.com/timstallmann/home-assistant-wevolor/issues"
 }
