@@ -29,3 +29,8 @@ Available services: `cover.open_cover`, `cover.close_cover`, `cover.stop_cover`.
 ## Button
 
 Favorite position for shades is exposed via a button, `button.wevolor_channel_1_favorite_position`.
+
+# Local development
+
+Run `pip install -r requirements.test.txt` to install requirements. Run `pre-commit install` to setup pre commit.
+Run `pytest` to run a basic configuration test.
