@@ -12,15 +12,17 @@ This integration supports Wevolor [version 5.4](https://wevolor.com/instructions
 ```
   host:
     description: The IP address of the Wevolor device on the local network.
-  channel_count:
-    description: The number of channels (1-6) you would like to be displayed in the UI for this Wevolor device.
+  name:
+    description: Name for this channel grouping.
+  channel_1 ... channel_6:
+    description:  Whether or not channel 1 - 6 should be included in commands sent to this group.
   support_tilt:
     description: Set true if any of the Levolor blinds you are controlling support tilt, false otherwise.
 ```
 
 ## Cover
 
-After setup, your shades/blinds will appear in Home Assistant with one entity per channel on the remote, e.g. `cover.wevolor_channel_1`, `cover.wevolor_channel_2`, etc.
+After setup, a new cover entity will appear in Home Assistant, controlling the various channels you specified.
 
 For more information on working with shades in Home Assistant, see the [Covers component](/integrations/cover/).
 
