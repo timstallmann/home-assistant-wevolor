@@ -26,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
             config_entry.data[CONFIG_NAME],
         )
     ]
-    async_add_entities(entities, True)
+    async_add_entities(entities)
 
 
 class WevolorFavoriteButton(ButtonEntity):

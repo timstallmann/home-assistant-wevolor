@@ -1,4 +1,5 @@
 """Config flow for Wevolor Control for Levolor Motorized Blinds integration."""
+
 from __future__ import annotations
 
 import logging
@@ -12,14 +13,25 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import CONFIG_CHANNELS, CONFIG_HOST, CONFIG_TILT, DOMAIN, CONFIG_CHANNEL_1, CONFIG_CHANNEL_2, CONFIG_CHANNEL_3, CONFIG_CHANNEL_4, CONFIG_CHANNEL_5, CONFIG_CHANNEL_6, CONFIG_NAME
+from .const import (
+    CONFIG_HOST,
+    CONFIG_TILT,
+    DOMAIN,
+    CONFIG_CHANNEL_1,
+    CONFIG_CHANNEL_2,
+    CONFIG_CHANNEL_3,
+    CONFIG_CHANNEL_4,
+    CONFIG_CHANNEL_5,
+    CONFIG_CHANNEL_6,
+    CONFIG_NAME,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONFIG_HOST): str,
-        vol.Required(CONFIG_CHANNEL_1, default= False): bool,
+        vol.Required(CONFIG_CHANNEL_1, default=False): bool,
         vol.Required(CONFIG_CHANNEL_2, default=False): bool,
         vol.Required(CONFIG_CHANNEL_3, default=False): bool,
         vol.Required(CONFIG_CHANNEL_4, default=False): bool,
@@ -43,7 +55,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     return status
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore
     """Handle a config flow for Wevolor Control for Levolor Motorized Blinds."""
 
     VERSION = 1
@@ -67,6 +79,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Unexpected exception: %s", err)
             errors["base"] = "unknown"
         else:
+            await self.async_set_unique_id(user_input[CONFIG_NAME])
+            self._abort_if_unique_id_configured()
             return self.async_create_entry(title=info["remote"], data=user_input)
 
         return self.async_show_form(
