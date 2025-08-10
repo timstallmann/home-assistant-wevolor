@@ -35,4 +35,4 @@ Favorite position for shades is exposed via a button, `button.wevolor_channel_1_
 # Local development
 
 Run `pip install -r requirements.test.txt` to install requirements. Run `pre-commit install` to setup pre commit.
-Run `pytest` to run a basic configuration test.
+Run `pytest --asyncio-mode-auto` to run a basic configuration test.

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pywevolor import Wevolor
-from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.components.cover import (
     CoverDeviceClass,
     CoverEntity,
@@ -29,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
             config_entry.data[CONFIG_TILT],
         )
     ]
-    async_add_entities(entities, True)
+    async_add_entities(entities)
 
 
 class WevolorShade(CoverEntity):
@@ -56,7 +55,7 @@ class WevolorShade(CoverEntity):
         self._attr_supported_features = (
             CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
         )
-        self._attr_unique_id = generate_entity_id("cover.wevolor_{}", name, None, hass)
+        self._attr_unique_id = "cover.wevolor_" + name
 
         if support_tilt:
             self._attr_device_class = CoverDeviceClass.BLIND
