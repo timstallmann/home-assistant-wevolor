@@ -16,7 +16,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 
     wevolor = hass.data[DOMAIN][config_entry.entry_id]
 
-    channels = [i for i in range(1, 6) if config_entry.data[f"{CONFIG_CHANNEL_}{i}"]]
+    channels = [i for i in range(1, 7) if config_entry.data[f"{CONFIG_CHANNEL_}{i}"]]
 
     entities = [
         WevolorFavoriteButton(
