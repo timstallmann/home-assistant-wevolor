@@ -1,5 +1,6 @@
 """Test sensor for simple integration."""
 
+from homeassistant.helpers import device_registry
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from homeassistant.helpers import entity_registry
 
@@ -43,7 +44,11 @@ async def test_sensor(hass):
     assert state
     assert favorite_state
     registry = entity_registry.async_get(hass)
+    devices = device_registry.async_get(hass)
     all_entries = list(registry.entities.values())
     assert len(all_entries) == 2
     assert all_entries[0].entity_id == "cover.wevolor_all_blinds"
     assert all_entries[1].entity_id == "button.wevolor_all_blinds_to_favorite_position"
+    all_devices = list(devices.devices.values())
+    assert len(all_devices) == 1
+    assert all_devices[0].name == "Wevolor all_blinds"

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from pywevolor import Wevolor
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import generate_entity_id
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 
 from . import WevolorRuntimeData
-from .const import DOMAIN, CONFIG_CHANNEL_, CONFIG_NAME
+from .const import CONFIG_CHANNEL_, CONFIG_HOST, CONFIG_NAME, DOMAIN
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
@@ -23,6 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
         WevolorFavoriteButton(
             hass,
             runtime_data.client,
+            runtime_data.get(CONFIG_HOST),
             channels,
             runtime_data.get(CONFIG_NAME),
         )
@@ -37,7 +39,12 @@ class WevolorFavoriteButton(ButtonEntity):
     _wevolor: Wevolor
 
     def __init__(
-        self, hass: HomeAssistant, wevolor: Wevolor, channels: list[int], name: str
+        self,
+        hass: HomeAssistant,
+        wevolor: Wevolor,
+        host: str,
+        channels: list[int],
+        name: str,
     ):
         super().__init__()
         """Set up wevolor and channel properties."""
@@ -46,6 +53,13 @@ class WevolorFavoriteButton(ButtonEntity):
         self._attr_name = f"Wevolor {name} to Favorite Position"
         self._attr_icon = "mdi:heart"
         self._attr_unique_id = generate_entity_id("button.wevolor_{}", name, None, hass)
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{host}:{name}")},
+            manufacturer="Wevolor",
+            model="Levolor Blind Group",
+            name=f"Wevolor {name}",
+            configuration_url=f"http://{host}",
+        )
 
     async def async_press(self) -> None:
         """Set this channel to favorite position."""
