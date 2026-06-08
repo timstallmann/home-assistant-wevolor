@@ -19,5 +19,16 @@
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "unknown": "[%key:common::config_flow::error::unknown%]"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Experimental positioning uses timed open/close/stop commands to estimate exact cover position. Fully close the blind, time how long a full open cycle takes, then enter that duration in seconds.",
+        "data": {
+          "experimental_positioning": "Enable experimental timed positioning",
+          "full_travel_time_secs": "Full travel time in seconds"
+        }
+      }
+    }
   }
 }

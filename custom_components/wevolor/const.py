@@ -13,3 +13,6 @@ CONFIG_CHANNEL_6 = "channel_6"
 CONFIG_CHANNEL_ = 'channel_'
 
 CONFIG_TILT = "support_tilt"
+OPTION_EXPERIMENTAL_POSITIONING = "experimental_positioning"
+OPTION_FULL_TRAVEL_TIME_SECS = "full_travel_time_secs"
+DEFAULT_EXPERIMENTAL_POSITIONING = False
