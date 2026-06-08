@@ -28,6 +28,20 @@ For more information on working with shades in Home Assistant, see the [Covers c
 
 Available services: `cover.open_cover`, `cover.close_cover`, `cover.stop_cover`. When tilt is enabled, `cover.open_cover_tilt`, `cover.close_cover_tilt` and `cover.stop_cover_tilt` are also available.
 
+### Experimental timed positioning
+
+This integration now includes an experimental timed-positioning mode, enabled from the config entry options in Home Assistant.
+
+When enabled, the cover entity also supports `cover.set_cover_position`. The integration estimates position by:
+
+- taking a calibrated full-travel time in seconds
+- issuing `open` or `close`
+- sending `stop` after the corresponding fraction of the full travel time
+
+To calibrate it, fully close the blind, time a complete open cycle with a stopwatch, and enter that duration in the integration options.
+
+This remains assumed-state behavior. Manual remote use can desynchronize the estimate. To limit drift, the integration resets its implied state whenever an integration-issued full open or full close completes.
+
 ## Button
 
 Favorite position for shades is exposed via a button, `button.wevolor_channel_1_favorite_position`.
