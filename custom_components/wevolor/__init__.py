@@ -1,4 +1,5 @@
 """The Wevolor Control for Levolor Motorized Blinds integration."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ PLATFORMS: list[str] = [
     Platform.COVER,
     Platform.BUTTON,
     Platform.NUMBER,
+    Platform.SENSOR,
 ]
 
 

@@ -27,6 +27,7 @@ from .const import (
     DOMAIN,
     OPTION_EXPERIMENTAL_POSITIONING,
     OPTION_FULL_TRAVEL_TIME_SECS,
+    OPTION_TREAT_FAVORITE_AS_CLOSED,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
         runtime_data.get(CONFIG_TILT, False),
         runtime_data.get(OPTION_EXPERIMENTAL_POSITIONING, False),
         runtime_data.get(OPTION_FULL_TRAVEL_TIME_SECS),
+        runtime_data.get(OPTION_TREAT_FAVORITE_AS_CLOSED, False),
     )
     if runtime_data.calibration is not None:
         runtime_data.calibration.register_cover(entity)
@@ -74,6 +76,7 @@ class WevolorShade(CoverEntity, RestoreEntity):
         support_tilt: bool = False,
         experimental_positioning: bool = False,
         full_travel_time_secs: float | None = None,
+        treat_favorite_as_closed: bool = False,
     ):
         """Create this wevolor shade cover entity."""
         super().__init__()
@@ -81,6 +84,7 @@ class WevolorShade(CoverEntity, RestoreEntity):
         self._channels = channels
         self._experimental_positioning = experimental_positioning
         self._full_travel_time_secs = full_travel_time_secs
+        self._treat_favorite_as_closed = treat_favorite_as_closed
         self._calibration_travel_time_secs: float | None = None
         self._attr_name = f"Wevolor {name}"
         self._attr_device_info = DeviceInfo(
@@ -95,7 +99,9 @@ class WevolorShade(CoverEntity, RestoreEntity):
             CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
         )
         self._attr_unique_id = "cover.wevolor_" + name
-        self._current_position: int | None = MAX_POSITION if experimental_positioning else None
+        self._current_position: int | None = (
+            MAX_POSITION if experimental_positioning else None
+        )
         self._target_position: int | None = None
         self._movement_direction: MovementDirection | None = None
         self._movement_started_monotonic: float | None = None
@@ -186,14 +192,18 @@ class WevolorShade(CoverEntity, RestoreEntity):
                 send_stop=False,
             )
         _LOGGER.debug(
-            "Closing Wevolor cover %s; current=%s target=%s supports_positioning=%s",
+            "Closing Wevolor cover %s; current=%s target=%s supports_positioning=%s treat_favorite_as_closed=%s",
             self.entity_id,
             current_position if self._supports_positioning else None,
             self._target_position,
             self._supports_positioning,
+            self._treat_favorite_as_closed,
         )
         self.async_write_ha_state()
-        await self._wevolor.close_blinds(self._channels)
+        if self._treat_favorite_as_closed:
+            await self._wevolor.favorite_blinds(self._channels)
+        else:
+            await self._wevolor.close_blinds(self._channels)
 
     async def async_set_cover_position(self, **kwargs) -> None:
         """Move the cover to an estimated position."""
@@ -237,9 +247,7 @@ class WevolorShade(CoverEntity, RestoreEntity):
             self.async_write_ha_state()
             return
 
-        direction: MovementDirection = (
-            "opening" if position_delta > 0 else "closing"
-        )
+        direction: MovementDirection = "opening" if position_delta > 0 else "closing"
         self._target_position = target_position
         self._begin_motion(direction)
         self._schedule_completion_for_duration(
@@ -342,6 +350,8 @@ class WevolorShade(CoverEntity, RestoreEntity):
             return
 
         elapsed_seconds = max(0.0, time.monotonic() - self._movement_started_monotonic)
+        # _supports_positioning (checked above) guarantees this is non-None and > 0.
+        assert self._effective_full_travel_time_secs is not None
         elapsed_position_delta = round(
             elapsed_seconds / self._effective_full_travel_time_secs * MAX_POSITION
         )
@@ -380,7 +390,9 @@ class WevolorShade(CoverEntity, RestoreEntity):
     def _cancel_scheduled_stop(self) -> None:
         """Cancel a scheduled stop callback if one exists."""
         if self._scheduled_completion_task is not None:
-            _LOGGER.debug("Cancelling scheduled completion for Wevolor cover %s", self.entity_id)
+            _LOGGER.debug(
+                "Cancelling scheduled completion for Wevolor cover %s", self.entity_id
+            )
             self._scheduled_completion_task.cancel()
             self._scheduled_completion_task = None
 
@@ -395,6 +407,8 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
     def _travel_time_for_delta(self, position_delta: int) -> float:
         """Convert a position delta into a travel duration."""
+        # All callers are guarded by _supports_positioning, which ensures non-None and > 0.
+        assert self._effective_full_travel_time_secs is not None
         return self._effective_full_travel_time_secs * position_delta / MAX_POSITION
 
     def _schedule_completion_for_duration(
@@ -449,7 +463,9 @@ class WevolorShade(CoverEntity, RestoreEntity):
                 send_stop=send_stop,
             )
         except asyncio.CancelledError:
-            _LOGGER.debug("Scheduled completion cancelled for Wevolor cover %s", self.entity_id)
+            _LOGGER.debug(
+                "Scheduled completion cancelled for Wevolor cover %s", self.entity_id
+            )
             return
 
     async def _async_handle_scheduled_completion(

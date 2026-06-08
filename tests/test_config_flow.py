@@ -4,9 +4,11 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.wevolor.const import (
     DEFAULT_EXPERIMENTAL_POSITIONING,
+    DEFAULT_TREAT_FAVORITE_AS_CLOSED,
     DOMAIN,
     OPTION_EXPERIMENTAL_POSITIONING,
     OPTION_FULL_TRAVEL_TIME_SECS,
+    OPTION_TREAT_FAVORITE_AS_CLOSED,
 )
 
 
@@ -94,3 +96,33 @@ async def test_options_flow_shows_calibration_field_when_enabled(hass) -> None:
     )
     assert values[OPTION_EXPERIMENTAL_POSITIONING] is True
     assert values[OPTION_FULL_TRAVEL_TIME_SECS] == 12.5
+
+
+async def test_options_flow_treat_favorite_as_closed_default(hass) -> None:
+    """Test that treat_favorite_as_closed defaults to False."""
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] == "form"
+    schema = result["data_schema"]
+    values = schema({})
+    assert values[OPTION_TREAT_FAVORITE_AS_CLOSED] is DEFAULT_TREAT_FAVORITE_AS_CLOSED
+
+
+async def test_options_flow_saves_treat_favorite_as_closed(hass) -> None:
+    """Test that enabling treat_favorite_as_closed is persisted."""
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_configure(
+        (await hass.config_entries.options.async_init(entry.entry_id))["flow_id"],
+        {
+            OPTION_EXPERIMENTAL_POSITIONING: False,
+            OPTION_TREAT_FAVORITE_AS_CLOSED: True,
+        },
+    )
+
+    assert result["type"] == "create_entry"
+    assert result["data"][OPTION_TREAT_FAVORITE_AS_CLOSED] is True

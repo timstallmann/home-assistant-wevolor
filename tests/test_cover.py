@@ -12,15 +12,18 @@ def _create_cover(
     hass,
     *,
     full_travel_time_secs: float = 10.0,
+    treat_favorite_as_closed: bool = False,
 ) -> WevolorShade:
     """Create a cover entity with mocked runtime dependencies."""
     client = AsyncMock()
     cover = WevolorShade(
         client,
-        [1],
-        "office",
+        host="192.168.1.1",
+        channels=[1],
+        name="office",
         experimental_positioning=True,
         full_travel_time_secs=full_travel_time_secs,
+        treat_favorite_as_closed=treat_favorite_as_closed,
     )
     cover.entity_id = "cover.wevolor_office"
     cover.hass = hass
@@ -150,3 +153,23 @@ async def test_open_cover_snaps_back_to_full_open(hass, monkeypatch) -> None:
 
     assert cover.current_cover_position == MAX_POSITION
     cover._wevolor.stop_blinds.assert_not_awaited()
+
+
+async def test_close_cover_dispatches_favorite_when_option_on(hass) -> None:
+    """async_close_cover should call favorite_blinds when treat_favorite_as_closed is True."""
+    cover = _create_cover(hass, treat_favorite_as_closed=True)
+
+    await cover.async_close_cover()
+
+    cover._wevolor.favorite_blinds.assert_awaited_once_with([1])
+    cover._wevolor.close_blinds.assert_not_awaited()
+
+
+async def test_close_cover_dispatches_normal_close_when_option_off(hass) -> None:
+    """async_close_cover should call close_blinds when treat_favorite_as_closed is False."""
+    cover = _create_cover(hass, treat_favorite_as_closed=False)
+
+    await cover.async_close_cover()
+
+    cover._wevolor.close_blinds.assert_awaited_once_with([1])
+    cover._wevolor.favorite_blinds.assert_not_awaited()

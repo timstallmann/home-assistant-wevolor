@@ -20,13 +20,35 @@
       }
     }
   },
+  "entity": {
+    "sensor": {
+      "calibration_status": {
+        "name": "Calibration status",
+        "state": {
+          "idle": "Idle",
+          "starting": "Starting",
+          "opening_to_anchor": "Opening to anchor",
+          "moving_to_target": "Moving to target",
+          "awaiting_observation": "Awaiting observation",
+          "adjusting": "Adjusting",
+          "complete": "Complete",
+          "invalid_observation": "Invalid observation",
+          "missing_cover": "Missing cover"
+        }
+      }
+    }
+  },
   "options": {
     "step": {
       "init": {
         "description": "Experimental positioning uses timed open/close/stop commands to estimate exact cover position. Fully close the blind, time how long a full open cycle takes, then enter that duration in seconds.",
         "data": {
           "experimental_positioning": "Enable experimental timed positioning",
-          "full_travel_time_secs": "Full travel time in seconds"
+          "full_travel_time_secs": "Full travel time in seconds",
+          "treat_favorite_as_closed": "Treat favorite position as closed"
+        },
+        "data_description": {
+          "treat_favorite_as_closed": "When enabled, the close action sends the favorite-position command instead of the normal close command. The favorite-position button entity will not be created."
         }
       }
     }

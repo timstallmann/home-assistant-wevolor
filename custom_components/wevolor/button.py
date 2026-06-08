@@ -17,6 +17,7 @@ from .const import (
     DOMAIN,
     OPTION_EXPERIMENTAL_POSITIONING,
     OPTION_FULL_TRAVEL_TIME_SECS,
+    OPTION_TREAT_FAVORITE_AS_CLOSED,
 )
 
 
@@ -27,15 +28,17 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 
     channels = [i for i in range(1, 7) if runtime_data.get(f"{CONFIG_CHANNEL_}{i}")]
 
-    entities = [
-        WevolorFavoriteButton(
-            hass,
-            runtime_data.client,
-            runtime_data.get(CONFIG_HOST),
-            channels,
-            runtime_data.get(CONFIG_NAME),
+    entities: list = []
+    if not runtime_data.get(OPTION_TREAT_FAVORITE_AS_CLOSED, False):
+        entities.append(
+            WevolorFavoriteButton(
+                hass,
+                runtime_data.client,
+                runtime_data.get(CONFIG_HOST),
+                channels,
+                runtime_data.get(CONFIG_NAME),
+            )
         )
-    ]
     if (
         runtime_data.get(OPTION_EXPERIMENTAL_POSITIONING, False)
         and runtime_data.get(OPTION_FULL_TRAVEL_TIME_SECS) is not None
@@ -108,7 +111,9 @@ class WevolorStartCalibrationButton(ButtonEntity):
     async def async_added_to_hass(self) -> None:
         """Subscribe to calibration state updates."""
         await super().async_added_to_hass()
-        self._remove_listener = self._calibration.register_listener(self.async_write_ha_state)
+        self._remove_listener = self._calibration.register_listener(
+            self.async_write_ha_state
+        )
 
     async def async_will_remove_from_hass(self) -> None:
         """Remove the calibration state subscription."""

@@ -24,9 +24,11 @@ from .const import (
     CONFIG_NAME,
     CONFIG_TILT,
     DEFAULT_EXPERIMENTAL_POSITIONING,
+    DEFAULT_TREAT_FAVORITE_AS_CLOSED,
     DOMAIN,
     OPTION_EXPERIMENTAL_POSITIONING,
     OPTION_FULL_TRAVEL_TIME_SECS,
+    OPTION_TREAT_FAVORITE_AS_CLOSED,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -142,10 +144,19 @@ class WevolorOptionsFlowHandler(config_entries.OptionsFlow):
                 DEFAULT_EXPERIMENTAL_POSITIONING,
             )
 
+        treat_favorite_as_closed = self._config_entry.options.get(
+            OPTION_TREAT_FAVORITE_AS_CLOSED,
+            DEFAULT_TREAT_FAVORITE_AS_CLOSED,
+        )
+
         schema: dict[vol.Marker, object] = {
             vol.Required(
                 OPTION_EXPERIMENTAL_POSITIONING,
                 default=experimental_positioning,
+            ): bool,
+            vol.Required(
+                OPTION_TREAT_FAVORITE_AS_CLOSED,
+                default=treat_favorite_as_closed,
             ): bool,
         }
 

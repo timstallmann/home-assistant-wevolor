@@ -1,8 +1,8 @@
-"""Calibration number entities for the Wevolor integration."""
+"""Calibration status sensor for the Wevolor integration."""
 
 from __future__ import annotations
 
-from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.core import HomeAssistant
 
@@ -15,9 +15,21 @@ from .const import (
     OPTION_FULL_TRAVEL_TIME_SECS,
 )
 
+CALIBRATION_STATUS_OPTIONS = [
+    "idle",
+    "starting",
+    "opening_to_anchor",
+    "moving_to_target",
+    "awaiting_observation",
+    "adjusting",
+    "complete",
+    "invalid_observation",
+    "missing_cover",
+]
+
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
-    """Set up calibration number entities."""
+    """Set up calibration status sensor entities."""
     runtime_data: WevolorRuntimeData = hass.data[DOMAIN][config_entry.entry_id]
     if (
         not runtime_data.get(OPTION_EXPERIMENTAL_POSITIONING, False)
@@ -28,7 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 
     async_add_entities(
         [
-            WevolorObservedOpenPercentNumber(
+            WevolorCalibrationStatusSensor(
                 runtime_data.get(CONFIG_HOST),
                 runtime_data.get(CONFIG_NAME),
                 runtime_data.calibration,
@@ -37,22 +49,20 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
     )
 
 
-class WevolorObservedOpenPercentNumber(NumberEntity):
-    """User input for the observed open percentage during calibration."""
+class WevolorCalibrationStatusSensor(SensorEntity):
+    """Sensor reporting the current calibration workflow status."""
 
     _attr_has_entity_name = True
-    _attr_mode = NumberMode.BOX
-    _attr_name = "Observed Percent Open"
-    _attr_native_min_value = 0
-    _attr_native_max_value = 100
-    _attr_native_step = 1
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = CALIBRATION_STATUS_OPTIONS
+    _attr_translation_key = "calibration_status"
 
     def __init__(self, host: str, name: str, calibration) -> None:
-        """Initialize the observed-open number entity."""
+        """Initialize the calibration status sensor."""
         super().__init__()
         self._calibration = calibration
         self._remove_listener = None
-        self._attr_unique_id = f"number.wevolor_{name}_observed_percent_open"
+        self._attr_unique_id = f"sensor.wevolor_{name}_calibration_status"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{host}:{name}")},
             manufacturer="Wevolor",
@@ -76,28 +86,14 @@ class WevolorObservedOpenPercentNumber(NumberEntity):
         await super().async_will_remove_from_hass()
 
     @property
-    def available(self) -> bool:
-        """Return whether the entity should accept user input.
-
-        Only available during the exact window when the calibration workflow
-        is active and waiting for the user to report the observed position.
-        """
-        return (
-            self._calibration.supports_calibration
-            and self._calibration.active
-            and self._calibration.awaiting_observation
-        )
-
-    @property
-    def native_value(self) -> float | None:
-        """Return the last observed percent open."""
-        return self._calibration.last_observed_open_percent
+    def native_value(self) -> str:
+        """Return the current calibration status."""
+        status = self._calibration.last_status
+        if status is None:
+            return "idle"
+        return status
 
     @property
     def extra_state_attributes(self) -> dict[str, str | int | float | bool | None]:
         """Expose calibration status attributes."""
         return self._calibration.status_attributes
-
-    async def async_set_native_value(self, value: float) -> None:
-        """Submit the observed percent open."""
-        await self._calibration.async_submit_observed_position(value)
