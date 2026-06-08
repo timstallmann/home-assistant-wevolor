@@ -16,7 +16,6 @@ def _create_cover(
     """Create a cover entity with mocked runtime dependencies."""
     client = AsyncMock()
     cover = WevolorShade(
-        hass,
         client,
         [1],
         "office",
@@ -109,6 +108,7 @@ async def test_full_close_snaps_to_zero(hass, monkeypatch) -> None:
     await hass.async_block_till_done()
 
     assert cover.current_cover_position == MIN_POSITION
+    cover._wevolor.stop_blinds.assert_not_awaited()
 
 
 async def test_async_added_to_hass_restores_last_position(hass) -> None:
@@ -149,3 +149,4 @@ async def test_open_cover_snaps_back_to_full_open(hass, monkeypatch) -> None:
     await hass.async_block_till_done()
 
     assert cover.current_cover_position == MAX_POSITION
+    cover._wevolor.stop_blinds.assert_not_awaited()

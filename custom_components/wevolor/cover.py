@@ -41,7 +41,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 
     entities = [
         WevolorShade(
-            hass,
             runtime_data.client,
             channels,
             runtime_data.get(CONFIG_NAME),
@@ -62,7 +61,6 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
     def __init__(
         self,
-        hass: HomeAssistant,
         wevolor: Wevolor,
         channels: list[int],
         name: str,
@@ -136,9 +134,10 @@ class WevolorShade(CoverEntity, RestoreEntity):
             self._target_position = MAX_POSITION
         self._begin_motion("opening")
         if self._supports_positioning:
-            self._schedule_stop_for_duration(
+            self._schedule_completion_for_duration(
                 self._travel_time_for_delta(MAX_POSITION - current_position),
                 MAX_POSITION,
+                send_stop=False,
             )
         self.async_write_ha_state()
         await self._wevolor.open_blinds(self._channels)
@@ -152,9 +151,10 @@ class WevolorShade(CoverEntity, RestoreEntity):
             self._target_position = MIN_POSITION
         self._begin_motion("closing")
         if self._supports_positioning:
-            self._schedule_stop_for_duration(
+            self._schedule_completion_for_duration(
                 self._travel_time_for_delta(current_position - MIN_POSITION),
                 MIN_POSITION,
+                send_stop=False,
             )
         self.async_write_ha_state()
         await self._wevolor.close_blinds(self._channels)
@@ -184,9 +184,10 @@ class WevolorShade(CoverEntity, RestoreEntity):
         )
         self._target_position = target_position
         self._begin_motion(direction)
-        self._schedule_stop_for_duration(
+        self._schedule_completion_for_duration(
             self._travel_time_for_delta(abs(position_delta)),
             target_position,
+            send_stop=True,
         )
         self.async_write_ha_state()
 
@@ -317,32 +318,40 @@ class WevolorShade(CoverEntity, RestoreEntity):
         """Convert a position delta into a travel duration."""
         return self._full_travel_time_secs * position_delta / MAX_POSITION
 
-    def _schedule_stop_for_duration(
+    def _schedule_completion_for_duration(
         self,
         duration_seconds: float,
         target_position: int | None,
+        *,
+        send_stop: bool,
     ) -> None:
-        """Schedule a stop for the current timed movement."""
+        """Schedule completion handling for the current timed movement."""
         self._cancel_scheduled_stop()
         self._scheduled_stop_unsub = async_call_later(
             self.hass,
             duration_seconds,
             lambda _: self.hass.async_create_task(
-                self._async_handle_scheduled_stop(target_position)
+                self._async_handle_scheduled_completion(
+                    target_position,
+                    send_stop=send_stop,
+                )
             ),
         )
 
-    async def _async_handle_scheduled_stop(
+    async def _async_handle_scheduled_completion(
         self,
         target_position: int | None,
+        *,
+        send_stop: bool,
     ) -> None:
-        """Handle an internally scheduled stop."""
+        """Handle an internally scheduled movement completion."""
         self._sync_current_position()
         if target_position is not None:
             self._current_position = target_position
         self._clear_motion_state()
         self.async_write_ha_state()
-        await self._wevolor.stop_blinds(self._channels)
+        if send_stop:
+            await self._wevolor.stop_blinds(self._channels)
 
     def _clamp_position(self, position: int | float) -> int:
         """Clamp a position to HA cover bounds."""
