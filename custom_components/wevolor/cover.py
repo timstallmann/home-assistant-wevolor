@@ -129,13 +129,33 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
     async def async_open_cover(self, **kwargs):
         """Open the cover."""
+        if self._supports_positioning:
+            current_position = self.current_cover_position
+            if current_position is None:
+                current_position = self._current_position or MIN_POSITION
+            self._target_position = MAX_POSITION
         self._begin_motion("opening")
+        if self._supports_positioning:
+            self._schedule_stop_for_duration(
+                self._travel_time_for_delta(MAX_POSITION - current_position),
+                MAX_POSITION,
+            )
         self.async_write_ha_state()
         await self._wevolor.open_blinds(self._channels)
 
     async def async_close_cover(self, **kwargs):
         """Close the cover."""
+        if self._supports_positioning:
+            current_position = self.current_cover_position
+            if current_position is None:
+                current_position = self._current_position or MAX_POSITION
+            self._target_position = MIN_POSITION
         self._begin_motion("closing")
+        if self._supports_positioning:
+            self._schedule_stop_for_duration(
+                self._travel_time_for_delta(current_position - MIN_POSITION),
+                MIN_POSITION,
+            )
         self.async_write_ha_state()
         await self._wevolor.close_blinds(self._channels)
 
