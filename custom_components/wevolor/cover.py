@@ -10,22 +10,23 @@ from homeassistant.components.cover import (
 )
 from homeassistant.core import HomeAssistant
 
+from . import WevolorRuntimeData
 from .const import CONFIG_TILT, DOMAIN, CONFIG_CHANNEL_, CONFIG_NAME
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
     """Set up the Wevolor shades."""
 
-    wevolor = hass.data[DOMAIN][config_entry.entry_id]
-    channels = [i for i in range(1, 7) if config_entry.data[f"{CONFIG_CHANNEL_}{i}"]]
+    runtime_data: WevolorRuntimeData = hass.data[DOMAIN][config_entry.entry_id]
+    channels = [i for i in range(1, 7) if runtime_data.get(f"{CONFIG_CHANNEL_}{i}")]
 
     entities = [
         WevolorShade(
             hass,
-            wevolor,
+            runtime_data.client,
             channels,
-            config_entry.data[CONFIG_NAME],
-            config_entry.data[CONFIG_TILT],
+            runtime_data.get(CONFIG_NAME),
+            runtime_data.get(CONFIG_TILT, False),
         )
     ]
     async_add_entities(entities)

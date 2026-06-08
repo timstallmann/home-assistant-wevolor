@@ -1,6 +1,9 @@
 """The Wevolor Control for Levolor Motorized Blinds integration."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any
+
 from pywevolor import Wevolor
 
 from homeassistant.config_entries import ConfigEntry
@@ -15,10 +18,25 @@ PLATFORMS: list[str] = [
 ]
 
 
+@dataclass
+class WevolorRuntimeData:
+    """Runtime data for a Wevolor config entry."""
+
+    client: Wevolor
+    entry: ConfigEntry
+
+    def get(self, key: str, default: Any | None = None) -> Any:
+        """Return a merged config value, preferring options over entry data."""
+        if key in self.entry.options:
+            return self.entry.options[key]
+        return self.entry.data.get(key, default)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Wevolor Control for Levolor Motorized Blinds from a config entry."""
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = Wevolor(
-        host=entry.data[CONFIG_HOST]
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = WevolorRuntimeData(
+        client=Wevolor(host=entry.data[CONFIG_HOST]),
+        entry=entry,
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
