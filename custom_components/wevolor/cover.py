@@ -43,17 +43,18 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
     runtime_data: WevolorRuntimeData = hass.data[DOMAIN][config_entry.entry_id]
     channels = [i for i in range(1, 7) if runtime_data.get(f"{CONFIG_CHANNEL_}{i}")]
 
-    entities = [
-        WevolorShade(
-            runtime_data.client,
-            runtime_data.get(CONFIG_HOST),
-            channels,
-            runtime_data.get(CONFIG_NAME),
-            runtime_data.get(CONFIG_TILT, False),
-            runtime_data.get(OPTION_EXPERIMENTAL_POSITIONING, False),
-            runtime_data.get(OPTION_FULL_TRAVEL_TIME_SECS),
-        )
-    ]
+    entity = WevolorShade(
+        runtime_data.client,
+        runtime_data.get(CONFIG_HOST),
+        channels,
+        runtime_data.get(CONFIG_NAME),
+        runtime_data.get(CONFIG_TILT, False),
+        runtime_data.get(OPTION_EXPERIMENTAL_POSITIONING, False),
+        runtime_data.get(OPTION_FULL_TRAVEL_TIME_SECS),
+    )
+    if runtime_data.calibration is not None:
+        runtime_data.calibration.register_cover(entity)
+    entities = [entity]
     async_add_entities(entities)
 
 
@@ -80,6 +81,7 @@ class WevolorShade(CoverEntity, RestoreEntity):
         self._channels = channels
         self._experimental_positioning = experimental_positioning
         self._full_travel_time_secs = full_travel_time_secs
+        self._calibration_travel_time_secs: float | None = None
         self._attr_name = f"Wevolor {name}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{host}:{name}")},
@@ -341,7 +343,7 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
         elapsed_seconds = max(0.0, time.monotonic() - self._movement_started_monotonic)
         elapsed_position_delta = round(
-            elapsed_seconds / self._full_travel_time_secs * MAX_POSITION
+            elapsed_seconds / self._effective_full_travel_time_secs * MAX_POSITION
         )
         signed_delta = (
             elapsed_position_delta
@@ -387,13 +389,13 @@ class WevolorShade(CoverEntity, RestoreEntity):
         """Return whether timed positioning is configured."""
         return (
             self._experimental_positioning
-            and self._full_travel_time_secs is not None
-            and self._full_travel_time_secs > 0
+            and self._effective_full_travel_time_secs is not None
+            and self._effective_full_travel_time_secs > 0
         )
 
     def _travel_time_for_delta(self, position_delta: int) -> float:
         """Convert a position delta into a travel duration."""
-        return self._full_travel_time_secs * position_delta / MAX_POSITION
+        return self._effective_full_travel_time_secs * position_delta / MAX_POSITION
 
     def _schedule_completion_for_duration(
         self,
@@ -477,3 +479,12 @@ class WevolorShade(CoverEntity, RestoreEntity):
     def _clamp_position(self, position: int | float) -> int:
         """Clamp a position to HA cover bounds."""
         return max(MIN_POSITION, min(MAX_POSITION, round(position)))
+
+    @property
+    def _effective_full_travel_time_secs(self) -> float | None:
+        """Return the active travel-time estimate."""
+        return self._calibration_travel_time_secs or self._full_travel_time_secs
+
+    def set_calibration_travel_time(self, travel_time: float | None) -> None:
+        """Override the travel-time estimate during guided calibration."""
+        self._calibration_travel_time_secs = travel_time
