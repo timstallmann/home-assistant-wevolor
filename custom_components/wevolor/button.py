@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pywevolor import Wevolor
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import generate_entity_id
@@ -10,6 +9,7 @@ from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.core import HomeAssistant
 
 from . import WevolorRuntimeData
+from .wevolor_client import WevolorClient
 from .const import (
     CONFIG_CHANNEL_,
     CONFIG_HOST,
@@ -58,12 +58,12 @@ class WevolorFavoriteButton(ButtonEntity):
     """Button entity to set a wevolor blind to favorite position."""
 
     _channels: list[int]
-    _wevolor: Wevolor
+    _wevolor: WevolorClient
 
     def __init__(
         self,
         hass: HomeAssistant,
-        wevolor: Wevolor,
+        wevolor: WevolorClient,
         host: str,
         channels: list[int],
         name: str,

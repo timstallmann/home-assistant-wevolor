@@ -7,7 +7,6 @@ import logging
 import time
 from typing import Literal
 
-from pywevolor import Wevolor
 from homeassistant.components.cover import (
     ATTR_POSITION,
     CoverDeviceClass,
@@ -19,6 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import WevolorRuntimeData
+from .wevolor_client import WevolorClient
 from .const import (
     CONFIG_HOST,
     CONFIG_CHANNEL_,
@@ -65,11 +65,11 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
     _attr_assumed_state = True
     _channels: list[int]
-    _wevolor: Wevolor
+    _wevolor: WevolorClient
 
     def __init__(
         self,
-        wevolor: Wevolor,
+        wevolor: WevolorClient,
         host: str,
         channels: list[int],
         name: str,
@@ -161,12 +161,6 @@ class WevolorShade(CoverEntity, RestoreEntity):
                 current_position = self._current_position or MIN_POSITION
             self._target_position = MAX_POSITION
         self._begin_motion("opening")
-        if self._supports_positioning:
-            self._schedule_completion_for_duration(
-                self._travel_time_for_delta(MAX_POSITION - current_position),
-                MAX_POSITION,
-                send_stop=False,
-            )
         _LOGGER.debug(
             "Opening Wevolor cover %s; current=%s target=%s supports_positioning=%s",
             self.entity_id,
@@ -175,7 +169,21 @@ class WevolorShade(CoverEntity, RestoreEntity):
             self._supports_positioning,
         )
         self.async_write_ha_state()
-        await self._wevolor.open_blinds(self._channels)
+        ok = await self._wevolor.open_blinds(self._channels)
+        if not ok:
+            _LOGGER.error(
+                "Wevolor open_blinds failed for cover %s; abandoning move",
+                self.entity_id,
+            )
+            self._clear_motion_state()
+            self.async_write_ha_state()
+            return
+        if self._supports_positioning:
+            self._schedule_completion_for_duration(
+                self._travel_time_for_delta(MAX_POSITION - current_position),
+                MAX_POSITION,
+                send_stop=False,
+            )
 
     async def async_close_cover(self, **kwargs):
         """Close the cover."""
@@ -185,12 +193,6 @@ class WevolorShade(CoverEntity, RestoreEntity):
                 current_position = self._current_position or MAX_POSITION
             self._target_position = MIN_POSITION
         self._begin_motion("closing")
-        if self._supports_positioning:
-            self._schedule_completion_for_duration(
-                self._travel_time_for_delta(current_position - MIN_POSITION),
-                MIN_POSITION,
-                send_stop=False,
-            )
         _LOGGER.debug(
             "Closing Wevolor cover %s; current=%s target=%s supports_positioning=%s treat_favorite_as_closed=%s",
             self.entity_id,
@@ -201,9 +203,23 @@ class WevolorShade(CoverEntity, RestoreEntity):
         )
         self.async_write_ha_state()
         if self._treat_favorite_as_closed:
-            await self._wevolor.favorite_blinds(self._channels)
+            ok = await self._wevolor.favorite_blinds(self._channels)
         else:
-            await self._wevolor.close_blinds(self._channels)
+            ok = await self._wevolor.close_blinds(self._channels)
+        if not ok:
+            _LOGGER.error(
+                "Wevolor close_blinds failed for cover %s; abandoning move",
+                self.entity_id,
+            )
+            self._clear_motion_state()
+            self.async_write_ha_state()
+            return
+        if self._supports_positioning:
+            self._schedule_completion_for_duration(
+                self._travel_time_for_delta(current_position - MIN_POSITION),
+                MIN_POSITION,
+                send_stop=False,
+            )
 
     async def async_set_cover_position(self, **kwargs) -> None:
         """Move the cover to an estimated position."""
@@ -250,11 +266,22 @@ class WevolorShade(CoverEntity, RestoreEntity):
         direction: MovementDirection = "opening" if position_delta > 0 else "closing"
         self._target_position = target_position
         self._begin_motion(direction)
-        self._schedule_completion_for_duration(
-            self._travel_time_for_delta(abs(position_delta)),
-            target_position,
-            send_stop=True,
-        )
+        self.async_write_ha_state()
+
+        if direction == "opening":
+            ok = await self._wevolor.open_blinds(self._channels)
+        else:
+            ok = await self._wevolor.close_blinds(self._channels)
+        if not ok:
+            _LOGGER.error(
+                "Wevolor move command failed for cover %s (direction=%s); abandoning move",
+                self.entity_id,
+                direction,
+            )
+            self._clear_motion_state()
+            self.async_write_ha_state()
+            return
+
         _LOGGER.debug(
             "Scheduled partial move for Wevolor cover %s; direction=%s duration=%.3fs target=%s",
             self.entity_id,
@@ -262,12 +289,11 @@ class WevolorShade(CoverEntity, RestoreEntity):
             self._travel_time_for_delta(abs(position_delta)),
             target_position,
         )
-        self.async_write_ha_state()
-
-        if direction == "opening":
-            await self._wevolor.open_blinds(self._channels)
-        else:
-            await self._wevolor.close_blinds(self._channels)
+        self._schedule_completion_for_duration(
+            self._travel_time_for_delta(abs(position_delta)),
+            target_position,
+            send_stop=True,
+        )
 
     async def async_open_cover_tilt(self, **kwargs):
         """Open tilt."""

@@ -5,14 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from pywevolor import Wevolor
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .calibration import WevolorCalibrationCoordinator
 from .const import CONFIG_HOST, DOMAIN
+from .wevolor_client import WevolorClient
 
 PLATFORMS: list[str] = [
     Platform.COVER,
@@ -26,7 +25,7 @@ PLATFORMS: list[str] = [
 class WevolorRuntimeData:
     """Runtime data for a Wevolor config entry."""
 
-    client: Wevolor
+    client: WevolorClient
     entry: ConfigEntry
     calibration: WevolorCalibrationCoordinator | None = None
 
@@ -40,7 +39,7 @@ class WevolorRuntimeData:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Wevolor Control for Levolor Motorized Blinds from a config entry."""
     runtime_data = WevolorRuntimeData(
-        client=Wevolor(host=entry.data[CONFIG_HOST]),
+        client=WevolorClient(host=entry.data[CONFIG_HOST]),
         entry=entry,
     )
     runtime_data.calibration = WevolorCalibrationCoordinator(hass, runtime_data)
