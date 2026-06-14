@@ -37,6 +37,9 @@ MIN_POSITION = 0
 MAX_POSITION = 100
 MIN_POSITION_DELTA = 1
 
+# Re-send a full open/close at most once per 12h to spare the relay remote's battery.
+ASSUMED_FULL_STATE_TTL_SECS = 12 * 60 * 60
+
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
     """Set up the Wevolor shades."""
@@ -107,6 +110,8 @@ class WevolorShade(CoverEntity, RestoreEntity):
         self._movement_started_monotonic: float | None = None
         self._movement_start_position: int | None = None
         self._scheduled_completion_task: asyncio.Task[None] | None = None
+        self._last_full_open_monotonic: float | None = None
+        self._last_full_close_monotonic: float | None = None
 
         if experimental_positioning and full_travel_time_secs is not None:
             self._attr_supported_features |= CoverEntityFeature.SET_POSITION
@@ -141,6 +146,8 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
     async def async_stop_cover(self, **kwargs):
         """Stop motion."""
+        self._last_full_open_monotonic = None
+        self._last_full_close_monotonic = None
         _LOGGER.debug(
             "Stopping Wevolor cover %s; current=%s target=%s direction=%s",
             self.entity_id,
@@ -155,6 +162,15 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
     async def async_open_cover(self, **kwargs):
         """Open the cover."""
+        if self._last_full_open_monotonic is not None and (
+            time.monotonic() - self._last_full_open_monotonic < ASSUMED_FULL_STATE_TTL_SECS
+        ):
+            _LOGGER.debug(
+                "Skipping redundant open for Wevolor cover %s; last full open was %.1fs ago",
+                self.entity_id,
+                time.monotonic() - self._last_full_open_monotonic,
+            )
+            return
         if self._supports_positioning:
             current_position = self.current_cover_position
             if current_position is None:
@@ -178,6 +194,8 @@ class WevolorShade(CoverEntity, RestoreEntity):
             self._clear_motion_state()
             self.async_write_ha_state()
             return
+        self._last_full_open_monotonic = time.monotonic()
+        self._last_full_close_monotonic = None
         if self._supports_positioning:
             self._schedule_completion_for_duration(
                 self._travel_time_for_delta(MAX_POSITION - current_position),
@@ -187,6 +205,15 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
     async def async_close_cover(self, **kwargs):
         """Close the cover."""
+        if self._last_full_close_monotonic is not None and (
+            time.monotonic() - self._last_full_close_monotonic < ASSUMED_FULL_STATE_TTL_SECS
+        ):
+            _LOGGER.debug(
+                "Skipping redundant close for Wevolor cover %s; last full close was %.1fs ago",
+                self.entity_id,
+                time.monotonic() - self._last_full_close_monotonic,
+            )
+            return
         if self._supports_positioning:
             current_position = self.current_cover_position
             if current_position is None:
@@ -214,6 +241,8 @@ class WevolorShade(CoverEntity, RestoreEntity):
             self._clear_motion_state()
             self.async_write_ha_state()
             return
+        self._last_full_close_monotonic = time.monotonic()
+        self._last_full_open_monotonic = None
         if self._supports_positioning:
             self._schedule_completion_for_duration(
                 self._travel_time_for_delta(current_position - MIN_POSITION),
@@ -265,6 +294,8 @@ class WevolorShade(CoverEntity, RestoreEntity):
 
         direction: MovementDirection = "opening" if position_delta > 0 else "closing"
         self._target_position = target_position
+        self._last_full_open_monotonic = None
+        self._last_full_close_monotonic = None
         self._begin_motion(direction)
         self.async_write_ha_state()
 
